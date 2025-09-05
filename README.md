@@ -96,7 +96,7 @@ From a single phase-map dataset, each unique composition’s melting point is de
 ### 训练与评估 / Train & Evaluate
 ```bash
 pip install -r requirements.txt
-...
+```
 # 训练并生成评估与图像
 python src/train_and_evaluate_sn_melting_point.py --data data/SnMeltingPoint.xlsx --outdir outputs
 # 产物：
