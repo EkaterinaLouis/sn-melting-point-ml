@@ -90,7 +90,7 @@ From a single phase‑map dataset, each unique composition’s melting point is 
 - **n_train**: **3400** **n_test**: **834** **n_features**: **20**
 
 **预测 vs 真实 / Predicted vs Actual (Test)**  
-![Pred vs Actual](outputs/figures/pred_vs_actual.png)
+![Pred vs Actual](sn-melting-point-ml/outputs/pred_vs_actual.png)
 
 > 置换重要性前 20 已输出至 `outputs/permutation_importance_top20.csv` 以供报告与讨论。  
 > *Top‑20 permutation importances are in `outputs/permutation_importance_top20.csv`.*
