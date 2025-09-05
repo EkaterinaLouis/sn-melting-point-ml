@@ -5,48 +5,155 @@
 **日期 / Date:** 2025‑MM‑DD  
 **代码仓库 / Repo:** `sn-melting-point-ml`
 
-> **说明**：本 README 将 **GUI 使用与界面**放在最前面（最直观）。  
-> 两张 GUI 截图请放在仓库的 `docs/` 目录，并命名为：  
-> `docs/gui-no-normalize.png` 与 `docs/gui-normalize.png`（下文已内嵌引用）。
+---
+
+## 目录 / Table of Contents
+- [摘要 / Abstract](#摘要--abstract)
+- [数据与标签构造 / Data & Target Construction](#数据与标签构造--data--target-construction)
+- [方法 / Methods](#方法--methods)
+  - [特征工程 / Feature Engineering](#特征工程--feature-engineering)
+  - [数据划分 / Split Strategy](#数据划分--split-strategy)
+  - [模型 / Models](#模型--models)
+- [结果 / Results](#结果--results)
+- [工具与使用 / Tools & Usage](#工具与使用--tools--usage)
+  - [训练与评估 / Train & Evaluate](#训练与评估--train--evaluate)
+  - [命令行预测 / CLI Prediction](#命令行预测--cli-prediction)
+  - [图形界面 / GUI](#图形界面--gui)
+- [正确性检查 / How to Judge Correctness](#正确性检查--how-to-judge-correctness)
+- [可复现性与目录结构 / Reproducibility & Structure](#可复现性与目录结构--reproducibility--structure)
+- [局限与改进 / Limitations & Future Work](#局限与改进--limitations--future-work)
+- [致谢 / Acknowledgments](#致谢--acknowledgments)
 
 ---
 
-## GUI 一目了然 / GUI at a Glance
+## 摘要 / Abstract
 
-**当前版本（不做归一化）**  
-- 支持高精度小数输入；程序**不修改你的输入**，仅在“提示行”显示当前输入和（不做归一化）。  
-- 点击“预测”后，左侧结果仅显示 **预测值 Pred** 与 **已有值 Data**（若原始数据中能匹配到则显示数值；否则显示“没有数据”）。  
-- 右侧嵌入模型在测试集上的 **Pred vs Actual** 散点图；下方展示评估指标（从 `outputs/metrics.json` 读取）。
+**中文**  
+本项目基于单一数据源 `SnMeltingPoint.xlsx` 的相图网格数据，为每一组唯一成分（12 个元素分数，和为 1）自动抽取其**首次出现液相（LIQUID）**的**最低温度**作为熔点标签 `T_melt`，并在此基础上构建**特征工程 + 分组验证**的回归模型。主模型为 HistGradientBoosting，并与 RandomForest、ElasticNet(+二次多项式) 对比。在严格留出测试集上获得 **MAE ≈ 18.86、RMSE ≈ 27.66、R² ≈ 0.9979**（单位随数据集）。项目提供**零参数命令行预测**与**GUI**，可对给定成分输出预测值并**回查已有数据**（如存在）。
 
-![GUI（不做归一化）](GUI界面（显示已有数据的样本）.png)
-
-**旧版/分支示例（带“归一化到1”按钮）**  
-- 若你在某个分支启用了“归一化到 1”，点击后会把当前 12 个输入按比例缩放到**严格和=1**，再进行预测与匹配。  
-- 当你手里是**配比**或**不严格和=1**的数时，这一模式更容易匹配到原表中的“已有值 Data”。
-
-![GUI（归一化示例）](GUI界面.png)
+**English**  
+From a single phase‑map dataset, each unique composition’s melting point is defined as the **minimum temperature where any LIQUID phase appears**. With physics‑inspired features and group‑aware splitting, HistGradientBoosting achieves **MAE ≈ 18.86, RMSE ≈ 27.66, R² ≈ 0.9979** on a held‑out test set. A zero‑arg CLI and a GUI provide predictions and robust look‑ups of existing data points.
 
 ---
 
-## GUI 详细说明 / Detailed GUI Guide
+## 数据与标签构造 / Data & Target Construction
 
-### 1) 输入区（12 个元素分数）
-- 对应 12 个元素：`Ag, Al, Au, Bi, Cu, Ga, In, Ni, Pb, Sb, Sn, Zn`。  
-- **高精度输入**：GUI 内部用 `Decimal` 解析字符串，支持长小数与科学计数法（如 `1e-5`），并对**中文/全角标点**做清洗（如把 `，` 视作 `.`）。  
-- **不做归一化**（当前默认）：你输入多少就按多少计算；仅在下方“提示行”显示当前输入和（例如 `1.000000`），**不会修改你的输入**。  
-- “填入示例”按钮会快速填入一个 Sn‑主的示例配方。
+- **原始文件 / Source**：`SnMeltingPoint.xlsx`（**27910 × 14**）  
+  - **成分分数 / Fractions (12)**：`Ag, Al, Au, Bi, Cu, Ga, In, Ni, Pb, Sb, Sn, Zn`（每行和为 1）  
+  - **温度 / Temperature**：`T`  
+  - **相名 / Phase**：包含如 `FCC_A1#1`, `LIQUID#2` 等
+- **熔点标签 / T_melt**：对每个**唯一成分向量**，在其所有记录中筛选 `Phase` 含 “LIQUID” 的行，取 **最小 `T`** 作为 `T_melt`。  
+- **监督样本量 / Labeled samples**：约 **4234** 组唯一成分（其余成分在所给温度范围内无液相或缺记录）。  
 
-> **提示**：训练数据中的 12 个分数是**和=1**的“原子分数”。如果你输入的不是分数（比如是配比或和≠1），模型仍会输出结果，但与训练分布存在偏差；“已有值 Data”也更难匹配到。
+> *We map each unique composition to the minimal temperature with any LIQUID phase and use it as the regression label.*
 
-### 2) 结果面板（Pred / Data）
-- **Pred**：模型预测的 `T_melt`（单位与数据集一致）。  
-- **Data**：在 `SnMeltingPoint.xlsx` 内进行**稳健回查**：  
-  1) 先用 **±0.005** 的公差在 12 维上逐元素匹配；  
-  2) 若找不到，把两边都**四舍五入到 4 位小数**再匹配；  
-  3) 再找不到，**四舍五入到 2 位**再匹配（与训练时 0.01 分组一致）；  
-  4) 找到候选后，只看 `Phase` 含 “LIQUID” 的行，取**最小温度**作为“已有值”。  
-- 若仍未匹配到，显示“（没有数据）”。这通常意味着该成分并不在相图网格点上，或者该成分在给定温度范围内未出现液相。
+---
 
-### 3) 评估面板（来自 `outputs/metrics.json`）
-- 展示：**MAE**、**RMSE**、**R²**、`n_train / n_test / n_features`。  
-- 这是在**严格留出测试集**上的指标，与你屏幕右侧的散点图一致：  
+## 方法 / Methods
+
+### 特征工程 / Feature Engineering
+
+- **基础特征 / Base (12)**：原始元素分数 \(\sum_i x_i = 1\)。
+- **物理/统计启发特征 / Physics‑ & statistics‑inspired (8)**（不依赖外部性质表）：  
+  1. `mixing_entropy = -Σ x_i ln x_i`（无量纲近似）  
+  2. `num_components = Σ 1[x_i > 0]`  
+  3. `max_frac, min_frac`  
+  4. `var_frac`（分数方差）  
+  5. `gini_diversity = 1 - Σ x_i^2`  
+  6. `sn_frac = x_Sn`, `sn_major = 1[x_Sn ≥ 0.5]`
+- **线性基线交互（用于 ElasticNet）/ Quadratic interactions for ElasticNet**：  
+  对 12 分数做二次多项式扩展（一次项、平方项、两两乘积），配合标准化与 ElasticNet 正则以刻画非线性与抑制共线性。  
+- **树模型无需缩放 / Trees don’t require scaling**：HGBR/RF 直接使用“12 分数 + 8 组合特征”。
+
+### 数据划分 / Split Strategy
+
+- **动机**：相图是成分网格；相近成分跨集合会导致信息泄漏。  
+- **方案**：将成分四舍五入到 **0.01** 形成**组 ID**；按组随机划分**测试集 20%**；训练集内用 **GroupKFold(3)** 验证。  
+- **规模**：`n_train = 3400`，`n_test = 834`，`n_features = 20`。
+
+### 模型 / Models
+
+- **主模型 / Primary**：`HistGradientBoostingRegressor`（learning_rate=0.1, max_iter=600, max_depth=None）。  
+- **对比 / Baselines**：`RandomForestRegressor`，`ElasticNet` (+ PolynomialFeatures + StandardScaler)。  
+- **指标 / Metrics**：MAE、RMSE、R²（全部在严格留出测试集上报告）。
+
+---
+
+## 结果 / Results
+
+**留出测试集表现 / Held‑out Test Performance**  
+（单位与原始数据一致 / Units follow the dataset）
+
+- **MAE**: **18.8648**  
+- **RMSE**: **27.6568**  
+- **R²**: **0.997906**  
+- **n_train**: **3400** **n_test**: **834** **n_features**: **20**
+
+**预测 vs 真实 / Predicted vs Actual (Test)**  
+![Pred vs Actual](outputs/figures/pred_vs_actual.png)
+
+> 置换重要性前 20 已输出至 `outputs/permutation_importance_top20.csv` 以供报告与讨论。  
+> *Top‑20 permutation importances are in `outputs/permutation_importance_top20.csv`.*
+
+---
+
+## 工具与使用 / Tools & Usage
+
+### 训练与评估 / Train & Evaluate
+```bash
+pip install -r requirements.txt
+
+# 训练并生成评估与图像
+python src/train_and_evaluate_sn_melting_point.py --data data/SnMeltingPoint.xlsx --outdir outputs
+# 产物：
+#   outputs/best_model.joblib
+#   outputs/metrics.json
+#   outputs/figures/pred_vs_actual.png
+#   outputs/permutation_importance_top20.csv
+
+
+
+## 图形界面详细介绍 / Extended GUI Guide
+
+### A. 界面布局 / Layout
+- **左上·输入区**：12 个元素分数输入框（`Ag…Zn`）。当前默认**不做归一化**，你输入多少就按多少计算。  
+- **左中·操作按钮**  
+  - **填入示例**：快速填入一个 Sn-主的示例成分。  
+  - **预测**：读取输入 → 生成特征 → 调用已训练模型 → 显示结果。  
+- **左中·提示行**：仅**显示**当前 12 个输入的求和（高精度展示），不自动修改任何输入。  
+- **左下·结果面板**：只展示两项——  
+  - **Pred**：模型预测的 `T_melt`（单位与数据集一致）；  
+  - **Data**：在原始表中稳健回查到的该成分**已有值**（若匹配不到显示“没有数据”）。  
+- **更下方·评估面板**：从 `outputs/metrics.json` 读取 `MAE / RMSE / R² / n_train / n_test / n_features`。  
+- **右侧·散点图**：`outputs/figures/pred_vs_actual.png`（测试集 Pred vs Actual）。
+
+---
+
+### B. 输入规则与精度 / Inputs & Precision
+- 可输入**长小数**或**科学计数法**（如 `1e-5`）。  
+- 程序在解析时会自动**清洗中文/全角标点**（如把 `，` 视作 `.`），避免误读。  
+- 输入框不做四舍五入/回写，因此你**看到的就是你输入的**。  
+- “提示行”会用高精度显示**当前输入和**（仅提示，不修改）。  
+- **注意**：模型是用“分数和=1”的数据训练的；如果你输入的是配比或和≠1，仍会给出预测，但与训练分布存在偏差，“已有值”也更可能匹配不到。
+
+---
+
+### C. 结果与“已有数据”匹配 / Results & Lookup
+- **Pred**：使用训练阶段相同的特征工程（12 分数 + 8 个统计/物理启发特征）进行预测。  
+- **Data（稳健匹配）**：默认对 `data/SnMeltingPoint.xlsx`（或项目根目录同名文件）执行以下**三步查找**：  
+  1) **公差匹配**：逐元素容差 `±0.005`；  
+  2) **小数位匹配-1**：双方都四舍五入到 **4 位**再逐元素比较；  
+  3) **小数位匹配-2**：双方都四舍五入到 **2 位**再比较（与训练时 0.01 的分组精度一致）。  
+  在候选集合中，仅保留 `Phase` 含 **LIQUID** 的行，取**最小温度**作为已有值。  
+- 仍无匹配 → 显示“没有数据”（常见于输入不在原始网格点上或该成分在温度范围内无液相）。
+
+---
+
+### D. 文件自动发现 / File Discovery
+- **模型**：优先 `outputs/best_model.joblib`；若不存在，从 `outputs/*.joblib` 中选择**最新**一个。  
+- **数据**：优先 `data/SnMeltingPoint.xlsx`，其次项目根目录 `SnMeltingPoint.xlsx`。  
+- **评估**：`outputs/metrics.json`（若不存在，评估面板以提示文本代替）。  
+- **散点图**：优先 `outputs/figures/pred_vs_actual.png`，其次 `outputs/pred_vs_actual.png`。  
+- 建议安装 **Pillow** 以稳定显示 PNG：  
+  ```bash
+  pip install pillow
