@@ -46,10 +46,8 @@ From a single phase-map dataset, each unique composition’s melting point is de
 
 ## 图形界面 / GUI
 
-> 建议把 GUI 截图放在 `docs/` 目录，例如：`docs/gui-no-normalize.png` 与 `docs/gui-with-match.png`（路径按你仓库实际文件名修改）。
-
-![GUI（不做归一化示例）](docs/gui-no-normalize.png)  
-![GUI（显示已有数据命中示例）](docs/gui-with-match.png)
+![GUI（不做归一化示例）](sn-melting-point-ml/GUI界面.png)  
+![GUI（显示已有数据命中示例）](sn-melting-point-ml/GUI界面（显示已有数据的样本）.png)
 
 本项目提供了一个简洁的图形界面（GUI），用于熔点预测与已有数据查找：
 
