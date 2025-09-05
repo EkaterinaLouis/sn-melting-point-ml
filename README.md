@@ -30,6 +30,34 @@
 From a single phase-map dataset, each unique composition’s melting point is defined as the **minimum temperature where any LIQUID phase appears**. With physics-inspired features and group-aware splitting, HistGradientBoosting achieves **MAE ≈ 18.86, RMSE ≈ 27.66, R² ≈ 0.9979** on a held-out test set. A zero-arg CLI and a GUI provide predictions and robust look-ups of existing data points.
 
 ---
+# 基于相图网格的 Sn 系多元合金熔点机器学习预测
+**Machine Learning Prediction of Melting Point for Sn-Based Multicomponent Alloys from Phase-Map Grids**
+
+---
+
+## 特征工程 / Feature Engineering  
+
+- **基础成分特征**  
+  12 个元素的摩尔分数（Ag, Al, …, Zn），满足 ∑xᵢ=1。  
+  *示例*: 对于合金 {Ag:0.25, Sn:0.5, Zn:0.25} → 特征向量 = [0.25, 0, …, 0.5, …, 0.25]。  
+
+- **混合熵 (Mixing Entropy)**  
+  −∑xᵢ log xᵢ，衡量组分无序度。  
+  *示例*: 上述合金的混合熵 = −(0.25·ln0.25 + 0.5·ln0.5 + 0.25·ln0.25) ≈ 1.04。  
+
+- **浓度多样性 (Diversity Index)**  
+  ∑xᵢ²，反映是否有单一组分占主导。  
+  *示例*: 0.25² + 0.5² + 0.25² = 0.375。数值越小表示组分越均匀。  
+
+- **Sn 权重特征**  
+  突出 Sn 的摩尔分数及其与其他元素的交互作用。  
+  *示例*: Sn_frac = 0.5；Sn*Ag = 0.125；Sn*Zn = 0.125。  
+
+- **多项式交互项**  
+  二阶组合特征（如 xᵢ·xⱼ），让线性模型捕捉非线性关系。  
+  *示例*: (Ag·Zn = 0.25·0.25=0.0625)。  
+
+---
 
 ## 数据与标签构造 / Data & Target Construction
 
