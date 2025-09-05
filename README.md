@@ -10,19 +10,14 @@
 ## 目录 / Table of Contents
 - [摘要 / Abstract](#摘要--abstract)
 - [数据与标签构造 / Data & Target Construction](#数据与标签构造--data--target-construction)
+- [图形界面 / GUI](#图形界面--gui)
 - [方法 / Methods](#方法--methods)
   - [特征工程 / Feature Engineering](#特征工程--feature-engineering)
   - [数据划分 / Split Strategy](#数据划分--split-strategy)
   - [模型 / Models](#模型--models)
-- [结果 / Results](#结果--results)
 - [工具与使用 / Tools & Usage](#工具与使用--tools--usage)
   - [训练与评估 / Train & Evaluate](#训练与评估--train--evaluate)
-  - [命令行预测 / CLI Prediction](#命令行预测--cli-prediction)
-  - [图形界面 / GUI](#图形界面--gui)
-- [正确性检查 / How to Judge Correctness](#正确性检查--how-to-judge-correctness)
-- [可复现性与目录结构 / Reproducibility & Structure](#可复现性与目录结构--reproducibility--structure)
-- [局限与改进 / Limitations & Future Work](#局限与改进--limitations--future-work)
-- [致谢 / Acknowledgments](#致谢--acknowledgments)
+- [结果 / Results](#结果--results)
 
 ---
 
@@ -49,6 +44,20 @@ From a single phase‑map dataset, each unique composition’s melting point is 
 
 ---
 
+## 图形界面 / GUI](#图形界面--gui)
+![Pred vs Actual]sn-melting-point-ml/outputs/pred_vs_actual.png
+![Pred vs Actual]sn-melting-point-ml/GUI界面（显示已有数据的样本）.png
+本项目提供了一个简洁的图形界面（GUI），用于熔点预测与已有数据查找：
+
+- **输入区**：12 个输入框，对应元素分数（Ag, Al, Au, Bi, Cu, Ga, In, Ni, Pb, Sb, Sn, Zn）。输入数值将按原样使用，不做归一化。  
+- **操作按钮**：  
+  - “填入示例”：自动填充一个 Sn 主体示例。  
+  - “预测”：调用模型输出预测值。  
+- **结果区**：显示 **预测值 Pred** 和 **已有值 Data**（若原始数据中能匹配到则显示数值，否则显示“没有数据”）。  
+- **评估信息**：展示模型在测试集上的性能指标（MAE、RMSE、R² 等）。  
+- **右侧图表**：显示 Pred vs Actual 散点图，用于直观查看预测效果。
+
+---
 ## 方法 / Methods
 
 ### 特征工程 / Feature Engineering
@@ -79,24 +88,6 @@ From a single phase‑map dataset, each unique composition’s melting point is 
 
 ---
 
-## 结果 / Results
-
-**留出测试集表现 / Held‑out Test Performance**  
-（单位与原始数据一致 / Units follow the dataset）
-
-- **MAE**: **18.8648**  
-- **RMSE**: **27.6568**  
-- **R²**: **0.997906**  
-- **n_train**: **3400** **n_test**: **834** **n_features**: **20**
-
-**预测 vs 真实 / Predicted vs Actual (Test)**  
-![Pred vs Actual](outputs/figures/pred_vs_actual.png)
-
-> 置换重要性前 20 已输出至 `outputs/permutation_importance_top20.csv` 以供报告与讨论。  
-> *Top‑20 permutation importances are in `outputs/permutation_importance_top20.csv`.*
-
----
-
 ## 工具与使用 / Tools & Usage
 
 ### 训练与评估 / Train & Evaluate
@@ -110,50 +101,23 @@ python src/train_and_evaluate_sn_melting_point.py --data data/SnMeltingPoint.xls
 #   outputs/metrics.json
 #   outputs/figures/pred_vs_actual.png
 #   outputs/permutation_importance_top20.csv
-
-
-
-## 图形界面详细介绍 / Extended GUI Guide
-
-### A. 界面布局 / Layout
-- **左上·输入区**：12 个元素分数输入框（`Ag…Zn`）。当前默认**不做归一化**，你输入多少就按多少计算。  
-- **左中·操作按钮**  
-  - **填入示例**：快速填入一个 Sn-主的示例成分。  
-  - **预测**：读取输入 → 生成特征 → 调用已训练模型 → 显示结果。  
-- **左中·提示行**：仅**显示**当前 12 个输入的求和（高精度展示），不自动修改任何输入。  
-- **左下·结果面板**：只展示两项——  
-  - **Pred**：模型预测的 `T_melt`（单位与数据集一致）；  
-  - **Data**：在原始表中稳健回查到的该成分**已有值**（若匹配不到显示“没有数据”）。  
-- **更下方·评估面板**：从 `outputs/metrics.json` 读取 `MAE / RMSE / R² / n_train / n_test / n_features`。  
-- **右侧·散点图**：`outputs/figures/pred_vs_actual.png`（测试集 Pred vs Actual）。
-
 ---
 
-### B. 输入规则与精度 / Inputs & Precision
-- 可输入**长小数**或**科学计数法**（如 `1e-5`）。  
-- 程序在解析时会自动**清洗中文/全角标点**（如把 `，` 视作 `.`），避免误读。  
-- 输入框不做四舍五入/回写，因此你**看到的就是你输入的**。  
-- “提示行”会用高精度显示**当前输入和**（仅提示，不修改）。  
-- **注意**：模型是用“分数和=1”的数据训练的；如果你输入的是配比或和≠1，仍会给出预测，但与训练分布存在偏差，“已有值”也更可能匹配不到。
+## 结果 / Results
 
----
+**留出测试集表现 / Held‑out Test Performance**  
+（单位与原始数据一致 / Units follow the dataset）
 
-### C. 结果与“已有数据”匹配 / Results & Lookup
-- **Pred**：使用训练阶段相同的特征工程（12 分数 + 8 个统计/物理启发特征）进行预测。  
-- **Data（稳健匹配）**：默认对 `data/SnMeltingPoint.xlsx`（或项目根目录同名文件）执行以下**三步查找**：  
-  1) **公差匹配**：逐元素容差 `±0.005`；  
-  2) **小数位匹配-1**：双方都四舍五入到 **4 位**再逐元素比较；  
-  3) **小数位匹配-2**：双方都四舍五入到 **2 位**再比较（与训练时 0.01 的分组精度一致）。  
-  在候选集合中，仅保留 `Phase` 含 **LIQUID** 的行，取**最小温度**作为已有值。  
-- 仍无匹配 → 显示“没有数据”（常见于输入不在原始网格点上或该成分在温度范围内无液相）。
+- **MAE**: **18.8648**  
+- **RMSE**: **27.6568**  
+- **R²**: **0.997906**  
+- **n_train**: **3400** **n_test**: **834** **n_features**: **20**
 
----
+**预测 vs 真实 / Predicted vs Actual (Test)**  
+![Pred vs Actual](sn-melting-point-ml/outputs/pred_vs_actual.png)
 
-### D. 文件自动发现 / File Discovery
-- **模型**：优先 `outputs/best_model.joblib`；若不存在，从 `outputs/*.joblib` 中选择**最新**一个。  
-- **数据**：优先 `data/SnMeltingPoint.xlsx`，其次项目根目录 `SnMeltingPoint.xlsx`。  
-- **评估**：`outputs/metrics.json`（若不存在，评估面板以提示文本代替）。  
-- **散点图**：优先 `outputs/figures/pred_vs_actual.png`，其次 `outputs/pred_vs_actual.png`。  
-- 建议安装 **Pillow** 以稳定显示 PNG：  
-  ```bash
-  pip install pillow
+> 置换重要性前 20 已输出至 `outputs/permutation_importance_top20.csv` 以供报告与讨论。  
+> *Top‑20 permutation importances are in `outputs/permutation_importance_top20.csv`.*
+
+
+
