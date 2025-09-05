@@ -2,6 +2,7 @@
 **Machine Learning Prediction of Melting Point for Sn-Based Multicomponent Alloys from Phase-Map Grids**
 
 **作者 / Author:** 张慧琳  
+**指导老师 / instructor:** 廖名情  
 **日期 / Date:** 2025-09-05  
 **代码仓库 / Repo:** `sn-melting-point-ml`
 
