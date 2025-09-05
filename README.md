@@ -1,8 +1,8 @@
 # 基于相图网格的 Sn 系多元合金熔点机器学习预测  
 **Machine Learning Prediction of Melting Point for Sn-Based Multicomponent Alloys from Phase-Map Grids**
 
-**作者 / Author:** _Your Name_  
-**日期 / Date:** 2025-MM-DD  
+**作者 / Author:** 张慧琳  
+**日期 / Date:** 2025-09-05  
 **代码仓库 / Repo:** `sn-melting-point-ml`
 
 ---
