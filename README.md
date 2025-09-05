@@ -9,6 +9,7 @@
 
 ## 目录 / Table of Contents
 - [摘要 / Abstract](#摘要--abstract)
+- [特征工程 / Feature Engineering](#特征工程--feature-engineering)
 - [数据与标签构造 / Data & Target Construction](#数据与标签构造--data--target-construction)
 - [图形界面 / GUI](#图形界面--gui)
 - [方法 / Methods](#方法--methods)
